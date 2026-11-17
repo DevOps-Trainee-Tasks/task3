@@ -8,7 +8,7 @@ resource "aws_ecs_task_definition" "webui" {
   network_mode = "awsvpc"
   cpu = 1024
   memory = 2048
-  execution_role_arn = aws_iam_role.execution.arn
+  execution_role_arn = var.execution_role_arn
 
   container_definitions = jsonencode([
   {
@@ -113,6 +113,4 @@ resource "aws_ecs_service" "webui" {
     container_name = "webui"
     container_port = 8080
   }
-
-  depends_on = [aws_iam_role_policy.secrets]
 }

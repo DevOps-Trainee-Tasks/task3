@@ -117,10 +117,22 @@ module "webui_credentials" {
   db_name = local.rds_db_name
 }
 
+module "iam" {
+  source = "./modules/iam"
+
+  name_prefix = local.project
+  webui_secret_arn = module.webui_credentials.arn
+  database_url_secret_arn = module.webui_credentials.database_url_secret_arn
+  rds_master_secret_arn = module.rds.master_secret_arn
+  smtp_password_parameter_arn = local.smtp_password_parameter_arn
+}
+
 module "ecs" {
   source = "./modules/ecs"
 
   name_prefix = local.project
+  execution_role_arn = module.iam.execution_role_arn
+  grafana_task_role_arn = module.iam.grafana_task_role_arn
   aws_region = local.aws_region
   private_subnet_ids = module.vpc.private_servers_subnet_ids
   alb_dns = module.alb.alb_dns

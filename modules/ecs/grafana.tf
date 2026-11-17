@@ -8,8 +8,8 @@ resource "aws_ecs_task_definition" "grafana" {
   network_mode = "awsvpc"
   cpu = 512
   memory = 1024
-  execution_role_arn = aws_iam_role.execution.arn
-  task_role_arn = aws_iam_role.execution.arn
+  execution_role_arn = var.execution_role_arn
+  task_role_arn = var.grafana_task_role_arn
 
   container_definitions = jsonencode([{
     name = "grafana"
@@ -78,6 +78,4 @@ resource "aws_ecs_service" "grafana" {
     container_name = "grafana"
     container_port = 3000
   }
-
-  depends_on = [aws_iam_role_policy.secrets]
 }

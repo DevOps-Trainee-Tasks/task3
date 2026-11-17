@@ -2,6 +2,14 @@ variable "name_prefix" {
   type = string
 }
 
+variable "execution_role_arn" {
+  type = string
+}
+
+variable "grafana_task_role_arn" {
+  type = string
+}
+
 variable "aws_region" {
   type = string
 }
