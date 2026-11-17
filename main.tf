@@ -88,6 +88,12 @@ module "sg" {
         "prometheus_sg"
       ]
     }
+
+  internal_alb_sg = {
+    ingress_ports_tcp = [80]
+    allowed_cidr_blocks = []
+    allowed_security_groups = ["webui_sg"]
+    }
   }
 }
 
@@ -100,6 +106,8 @@ module "alb" {
     public_subnet_ids = module.vpc.public_subnet_ids
     security_groups_id = module.sg.security_group_ids["alb_sg"]
     ollama_port = 11434
+    private_subnet_ids = module.vpc.private_servers_subnet_ids
+    internal_security_group_id = module.sg.security_group_ids["internal_alb_sg"]
 }
 
 module "rds" {
@@ -156,11 +164,11 @@ module "ecs" {
   private_subnet_ids = module.vpc.private_servers_subnet_ids
   alb_dns = module.alb.alb_dns
 
-  ollama_image = "${var.ecr_repository_uri}:ollama-v2"
-  webui_image = "${var.ecr_repository_uri}:open-webui-v2"
-  prometheus_image = "${var.ecr_repository_uri}:prometheus-v2"
-  grafana_image = "${var.ecr_repository_uri}:grafana-v2"
-  db_init_image = "${var.ecr_repository_uri}:db-init-v2"
+  ollama_image = "${var.ecr_repository_uri}/ollama:v3"
+  webui_image = "${var.ecr_repository_uri}/open-webui:v2"
+  prometheus_image = "${var.ecr_repository_uri}/prometheus:v2"
+  grafana_image = "${var.ecr_repository_uri}/grafana:v2"
+  db_init_image = "${var.ecr_repository_uri}/db-init:v2"
 
   ollama_security_group_id = module.sg.security_group_ids["ollama_sg"]
   webui_security_group_id = module.sg.security_group_ids["webui_sg"]
@@ -183,4 +191,5 @@ module "ecs" {
 
   logs_efs_id = module.efs.file_system_id
   log_router = local.log_router
+  internal_alb_dns = module.alb.internal_alb_dns
 }

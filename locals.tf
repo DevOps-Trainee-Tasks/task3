@@ -1,7 +1,7 @@
 locals {
     aws_region = "us-east-1"
     project = "task3"
-    smtp_password_parameter_arn = "arn:aws:ssm:${local.aws_region}:${data.aws_caller_identity.current.account_id}:parameter/${local.project}/grafana/smtp-password"
+    smtp_password_parameter_arn = "arn:aws:ssm:${local.aws_region}:${data.aws_caller_identity.current.account_id}:parameter/task2/grafana/smtp-password"
     rds_instance_class = "db.t4g.micro"
     rds_db_name = "manualdb"
     rds_db_username = "dbadmin"

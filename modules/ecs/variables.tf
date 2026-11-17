@@ -22,6 +22,10 @@ variable "alb_dns" {
   type = string
 }
 
+variable "internal_alb_dns" {
+  type = string
+}
+
 variable "ollama_image" {
   type = string
 }

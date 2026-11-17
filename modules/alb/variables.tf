@@ -17,3 +17,11 @@ variable "security_groups_id" {
 variable "ollama_port" {
     type = number
 }
+
+variable "private_subnet_ids" {
+  type = list(string)
+}
+
+variable "internal_security_group_id" {
+  type = string
+}

@@ -5,6 +5,23 @@ resource "aws_lb" "alb" {
   idle_timeout = 180
 }
 
+resource "aws_lb" "internal" {
+  name = "${var.name_prefix}-internal-alb"
+  internal = true
+  subnets = var.private_subnet_ids
+  security_groups = [var.internal_security_group_id]
+}
+
+resource "aws_lb_listener" "internal" {
+  load_balancer_arn = aws_lb.internal.arn
+  port = 80
+
+  default_action {
+    type = "forward"
+    target_group_arn = aws_lb_target_group.ollama.arn
+  }
+}
+
 resource "aws_lb_target_group" "ollama" {
   name = "${var.name_prefix}-ollama"
   vpc_id = var.vpc_id
@@ -60,32 +77,6 @@ resource "aws_lb_listener" "webui" {
   default_action {
     type = "forward"
     target_group_arn = aws_lb_target_group.webui.arn
-  }
-}
-
-resource "aws_lb_listener_rule" "ollama" {
-  listener_arn = aws_lb_listener.webui.arn
-
-  condition {
-    path_pattern {
-      values = ["/ollama", "/ollama/*"]
-    }
-  }
-
-  transform {
-    type = "url-rewrite"
-
-    url_rewrite_config {
-      rewrite {
-        regex = "^/ollama/?(.*)$"
-        replace = "/$1"
-      }
-    }
-  }
-
-  action {
-    type = "forward"
-    target_group_arn = aws_lb_target_group.ollama.arn
   }
 }
 
