@@ -11,6 +11,7 @@ resource "aws_ecs_task_definition" "webui" {
   execution_role_arn = var.execution_role_arn
 
   container_definitions = jsonencode([
+    var.log_router,
   {
     name = "db-init"
     image = var.db_init_image
@@ -47,11 +48,11 @@ resource "aws_ecs_task_definition" "webui" {
     ]
 
     logConfiguration = {
-      logDriver = "awslogs"
+      logDriver = "awsfirelens"
       options = {
-        awslogs-group = aws_cloudwatch_log_group.webui.name
-        awslogs-region = var.aws_region
-        awslogs-stream-prefix = "db-init"
+        Name = "file"
+        Path = "/logs/webui"
+        Mkdir = "true"
       }
     }
   },
@@ -70,7 +71,7 @@ resource "aws_ecs_task_definition" "webui" {
 
     environment = [{
       name = "OLLAMA_BASE_URL"
-      value = "http://${var.alb_dns}:11434"
+      value = "http://${var.alb_dns}/ollama"
     }]
 
     secrets = [
@@ -85,15 +86,23 @@ resource "aws_ecs_task_definition" "webui" {
     ]
 
     logConfiguration = {
-      logDriver = "awslogs"
+      logDriver = "awsfirelens"
       options = {
-        awslogs-group = aws_cloudwatch_log_group.webui.name
-        awslogs-region = var.aws_region
-        awslogs-stream-prefix = "webui"
+        Name = "file"
+        Path = "/logs/webui"
+        Mkdir = "true"
       }
     }
   }
   ])
+  volume {
+    name = "logs"
+
+    efs_volume_configuration {
+      file_system_id = var.logs_efs_id
+      transit_encryption = "ENABLED"
+    }
+  }
 }
 
 resource "aws_ecs_service" "webui" {

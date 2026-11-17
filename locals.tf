@@ -2,14 +2,21 @@ locals {
     aws_region = "us-east-1"
     project = "task3"
     smtp_password_parameter_arn = "arn:aws:ssm:${local.aws_region}:${data.aws_caller_identity.current.account_id}:parameter/${local.project}/grafana/smtp-password"
-    bastion_ami_id = "ami-0dfa9c347746b8b71"
-    bastion_instance_type = "m7i-flex.large"
-    bastion_key_name  = "task1-key"
-    llm_ami_id = "ami-0357c67111e0e9635"
-    llm_instance_type = "m7i-flex.large"
     rds_instance_class = "db.t4g.micro"
     rds_db_name = "manualdb"
     rds_db_username = "dbadmin"
     rds_engine_version = "16"
     rds_allocated_storage = 20
+    log_router = {
+        name = "log-router"
+        image = "public.ecr.aws/aws-observability/aws-for-fluent-bit:3"
+
+        firelensConfiguration = {
+            type = "fluentbit"
+        }
+        mountPoints = [{
+            sourceVolume = "logs"
+            containerPath = "/logs"
+        }]
+    }
 }

@@ -25,7 +25,6 @@ resource "aws_lb_target_group" "webui" {
   target_type = "ip"
 
   health_check {
-    path = "/"
     matcher = "200-399"
   }
 }
@@ -38,7 +37,7 @@ resource "aws_lb_target_group" "grafana" {
   target_type = "ip"
 
   health_check {
-    path = "/api/health"
+    path = "/grafana/api/health"
   }
 }
 
@@ -54,21 +53,9 @@ resource "aws_lb_target_group" "prometheus" {
   }
 }
 
-resource "aws_lb_listener" "ollama" {
-  load_balancer_arn = aws_lb.alb.arn
-  port = var.ollama_port
-  protocol = "HTTP"
-
-  default_action {
-    type = "forward"
-    target_group_arn = aws_lb_target_group.ollama.arn
-  }
-}
-
 resource "aws_lb_listener" "webui" {
   load_balancer_arn = aws_lb.alb.arn
   port = 80
-  protocol = "HTTP"
 
   default_action {
     type = "forward"
@@ -76,23 +63,68 @@ resource "aws_lb_listener" "webui" {
   }
 }
 
-resource "aws_lb_listener" "grafana" {
-  load_balancer_arn = aws_lb.alb.arn
-  port = 3000
-  protocol = "HTTP"
+resource "aws_lb_listener_rule" "ollama" {
+  listener_arn = aws_lb_listener.webui.arn
 
-  default_action {
+  condition {
+    path_pattern {
+      values = ["/ollama", "/ollama/*"]
+    }
+  }
+
+  transform {
+    type = "url-rewrite"
+
+    url_rewrite_config {
+      rewrite {
+        regex = "^/ollama/?(.*)$"
+        replace = "/$1"
+      }
+    }
+  }
+
+  action {
+    type = "forward"
+    target_group_arn = aws_lb_target_group.ollama.arn
+  }
+}
+
+resource "aws_lb_listener_rule" "grafana" {
+  listener_arn = aws_lb_listener.webui.arn
+
+  condition {
+    path_pattern {
+      values = ["/grafana", "/grafana/*"]
+    }
+  }
+
+  action {
     type = "forward"
     target_group_arn = aws_lb_target_group.grafana.arn
   }
 }
 
-resource "aws_lb_listener" "prometheus" {
-  load_balancer_arn = aws_lb.alb.arn
-  port = 9090
-  protocol = "HTTP"
+resource "aws_lb_listener_rule" "prometheus" {
+  listener_arn = aws_lb_listener.webui.arn
 
-  default_action {
+  condition {
+    path_pattern {
+      values = ["/prometheus", "/prometheus/*"]
+    }
+  }
+
+  transform {
+    type = "url-rewrite"
+
+    url_rewrite_config {
+      rewrite {
+        regex = "^/prometheus/?(.*)$"
+        replace = "/$1"
+      }
+    }
+  }
+
+  action {
     type = "forward"
     target_group_arn = aws_lb_target_group.prometheus.arn
   }

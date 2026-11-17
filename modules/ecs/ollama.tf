@@ -10,7 +10,7 @@ resource "aws_ecs_task_definition" "ollama" {
   memory = 8192
   execution_role_arn = var.execution_role_arn
 
-  container_definitions = jsonencode([{
+  container_definitions = jsonencode([var.log_router, {
     name = "ollama"
     image = var.ollama_image
 
@@ -19,14 +19,22 @@ resource "aws_ecs_task_definition" "ollama" {
     }]
 
     logConfiguration = {
-      logDriver = "awslogs"
+      logDriver = "awsfirelens"
       options = {
-        awslogs-group = aws_cloudwatch_log_group.ollama.name
-        awslogs-region = var.aws_region
-        awslogs-stream-prefix = "ollama"
+        Name = "file"
+        Path = "/logs/ollama"
+        Mkdir = "true"
       }
     }
   }])
+  volume {
+    name = "logs"
+
+    efs_volume_configuration {
+      file_system_id = var.logs_efs_id
+      transit_encryption = "ENABLED"
+    }
+  }
 }
 
 resource "aws_ecs_service" "ollama" {

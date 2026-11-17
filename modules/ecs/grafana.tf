@@ -11,7 +11,7 @@ resource "aws_ecs_task_definition" "grafana" {
   execution_role_arn = var.execution_role_arn
   task_role_arn = var.grafana_task_role_arn
 
-  container_definitions = jsonencode([{
+  container_definitions = jsonencode([var.log_router, {
     name = "grafana"
     image = var.grafana_image
 
@@ -26,7 +26,7 @@ resource "aws_ecs_task_definition" "grafana" {
     },
     {
       name = "PROMETHEUS_URL"
-      value = "http://${var.alb_dns}:9090"
+      value = "http://${var.alb_dns}/prometheus/"
     },
     {
       name = "GF_SMTP_ENABLED"
@@ -43,6 +43,14 @@ resource "aws_ecs_task_definition" "grafana" {
     {
       name = "GF_SMTP_FROM_ADDRESS"
       value = var.alert_email
+    },
+    {
+      name = "GF_SERVER_ROOT_URL"
+      value = "http://${var.alb_dns}/grafana/"
+    },
+    {
+      name = "GF_SERVER_SERVE_FROM_SUB_PATH"
+      value = "true"
     }]
 
     secrets = [{
@@ -51,14 +59,22 @@ resource "aws_ecs_task_definition" "grafana" {
     }]
 
     logConfiguration = {
-      logDriver = "awslogs"
+      logDriver = "awsfirelens"
       options = {
-        awslogs-group = aws_cloudwatch_log_group.grafana.name
-        awslogs-region = var.aws_region
-        awslogs-stream-prefix = "grafana"
+        Name = "file"
+        Path = "/logs/grafana"
+        Mkdir = "true"
       }
     }
   }])
+  volume {
+    name = "logs"
+
+    efs_volume_configuration {
+      file_system_id = var.logs_efs_id
+      transit_encryption = "ENABLED"
+    }
+  }
 }
 
 resource "aws_ecs_service" "grafana" {

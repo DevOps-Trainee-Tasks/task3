@@ -10,23 +10,38 @@ resource "aws_ecs_task_definition" "prometheus" {
   memory = 1024
   execution_role_arn = var.execution_role_arn
 
-  container_definitions = jsonencode([{
+  container_definitions = jsonencode([var.log_router, {
     name = "prometheus"
     image = var.prometheus_image
+    command = [
+      "--config.file=/etc/prometheus/prometheus.yml",
+      "--storage.tsdb.path=/prometheus",
+      "--storage.tsdb.retention.size=2GB",
+      "--web.external-url=http://${var.alb_dns}/prometheus/",
+      "--web.route-prefix=/"
+    ]
 
     portMappings = [{
       containerPort = 9090
     }]
 
     logConfiguration = {
-      logDriver = "awslogs"
+      logDriver = "awsfirelens"
       options = {
-        awslogs-group = aws_cloudwatch_log_group.prometheus.name
-        awslogs-region = var.aws_region
-        awslogs-stream-prefix = "prometheus"
+        Name = "file"
+        Path = "/logs/prometheus"
+        Mkdir = "true"
       }
     }
   }])
+  volume {
+    name = "logs"
+
+    efs_volume_configuration {
+      file_system_id = var.logs_efs_id
+      transit_encryption = "ENABLED"
+    }
+  }
 }
 
 resource "aws_ecs_service" "prometheus" {

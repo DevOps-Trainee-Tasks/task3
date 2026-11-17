@@ -1,7 +1,7 @@
 terraform {
   required_providers {
     aws = {
-      source  = "hashicorp/aws"
+      source = "hashicorp/aws"
       version = "~> 6.0"
     }
   }
@@ -77,6 +77,17 @@ module "sg" {
       allowed_cidr_blocks = []
       allowed_security_groups = ["webui_sg"]
     }
+
+    efs_sg = {
+      ingress_ports_tcp = [2049]
+      allowed_cidr_blocks = []
+      allowed_security_groups = [
+        "ollama_sg",
+        "webui_sg",
+        "grafana_sg",
+        "prometheus_sg"
+      ]
+    }
   }
 }
 
@@ -127,6 +138,14 @@ module "iam" {
   smtp_password_parameter_arn = local.smtp_password_parameter_arn
 }
 
+module "efs" {
+  source = "./modules/efs"
+
+  name_prefix = local.project
+  subnet_ids = module.vpc.private_servers_subnet_ids
+  security_group_id = module.sg.security_group_ids["efs_sg"]
+}
+
 module "ecs" {
   source = "./modules/ecs"
 
@@ -161,4 +180,7 @@ module "ecs" {
   db_name = local.rds_db_name
   rds_master_secret_arn = module.rds.master_secret_arn
   smtp_password_parameter_arn = local.smtp_password_parameter_arn
+
+  logs_efs_id = module.efs.file_system_id
+  log_router = local.log_router
 }

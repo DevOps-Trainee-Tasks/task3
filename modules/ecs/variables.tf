@@ -101,3 +101,9 @@ variable "smtp_password_parameter_arn" {
 variable "db_init_image" {
   type = string
 }
+
+variable "logs_efs_id" {
+  type = string
+}
+
+variable "log_router" {}
