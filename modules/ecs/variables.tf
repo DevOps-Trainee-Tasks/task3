@@ -90,3 +90,6 @@ variable "smtp_password_parameter_arn" {
   type = string
 }
 
+variable "db_init_image" {
+  type = string
+}

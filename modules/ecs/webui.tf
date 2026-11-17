@@ -13,7 +13,7 @@ resource "aws_ecs_task_definition" "webui" {
   container_definitions = jsonencode([
   {
     name = "db-init"
-    image = "public.ecr.aws/docker/library/postgres:16-alpine"
+    image = var.db_init_image
     essential = false
 
     environment = [
@@ -44,25 +44,6 @@ resource "aws_ecs_task_definition" "webui" {
         name = "WEBUI_DB_PASSWORD"
         valueFrom = "${var.webui_secret_arn}:db_password::"
       }
-    ]
-
-    command = ["sh", "-ec", <<-SCRIPT
-      until pg_isready; do sleep 3; done
-
-      psql -v ON_ERROR_STOP=1 \
-        -v dbuser="$WEBUI_DB_USERNAME" \
-        -v dbpass="$WEBUI_DB_PASSWORD" <<'SQL'
-      CREATE EXTENSION IF NOT EXISTS vector;
-
-      SELECT format('CREATE ROLE %I LOGIN', :'dbuser')
-      WHERE NOT EXISTS (
-        SELECT 1 FROM pg_roles WHERE rolname = :'dbuser'
-      ) \gexec
-
-      SELECT format('ALTER ROLE %I PASSWORD %L', :'dbuser', :'dbpass') \gexec
-      SELECT format('GRANT USAGE, CREATE ON SCHEMA public TO %I', :'dbuser') \gexec
-      SQL
-    SCRIPT
     ]
 
     logConfiguration = {

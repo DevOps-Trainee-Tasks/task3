@@ -129,6 +129,7 @@ module "ecs" {
   webui_image = "${var.ecr_repository_uri}:open-webui-v2"
   prometheus_image = "${var.ecr_repository_uri}:prometheus-v2"
   grafana_image = "${var.ecr_repository_uri}:grafana-v2"
+  db_init_image = "${var.ecr_repository_uri}:db-init-v2"
 
   ollama_security_group_id = module.sg.security_group_ids["ollama_sg"]
   webui_security_group_id = module.sg.security_group_ids["webui_sg"]
