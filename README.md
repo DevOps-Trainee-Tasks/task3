@@ -1,119 +1,134 @@
-# Task 2 — AWS Monitoring and Alerting
+# Task 3 — ECS Fargate
 
-This project extends the Task 1 AWS infrastructure with monitoring and a browser interface for Ollama. Terraform provisions the network, compute, load balancer, PostgreSQL database, security groups, and credentials. Packer builds the Amazon Machine Images (AMIs) used by the Bastion and LLM instances.
+Terraform deploys Ollama, Open WebUI, Prometheus, and Grafana as ECS Fargate services. Their images are built in the sibling `docker_task3` directory and pushed to one existing ECR repository.
 
 ## Architecture
 
 | Component | Location | Purpose |
 | --- | --- | --- |
-| Bastion EC2 | Public subnet | Runs Prometheus, Grafana, and Open WebUI; provides SSH access. |
-| Ollama EC2 instances | Private server subnets | Run Ollama and Node Exporter; managed by an Auto Scaling Group (ASG). |
-| Application Load Balancer | Public subnets | Forwards HTTP traffic on port `11434` to Ollama and checks `/api/tags`. |
-| PostgreSQL RDS | Private database subnets | Stores Open WebUI data. |
-| NAT gateway | Public subnet | Provides outbound internet access to private subnets. |
+| VPC | Two public, two private application, and two private database subnets | Separates the load balancer, ECS tasks, and database. NAT provides outbound access for tasks. |
+| ALB | Public subnets | Routes HTTP requests to the four ECS services; public access is limited to `my_ip`. |
+| ECS | Private application subnets | Runs two Ollama tasks and one each for WebUI, Prometheus, and Grafana. |
+| PostgreSQL RDS | Private database subnets | Stores WebUI data; RDS manages the master password. |
+| Secrets Manager | AWS | Stores WebUI credentials and its database URL. |
+| CloudWatch Logs | AWS | Receives container logs in `/ecs/task3/{ollama,webui,grafana,prometheus}`. |
 
-Prometheus runs on the Bastion and discovers running LLM instances by their EC2 `Name=ollama` tag. It collects Node Exporter metrics on port `9100`. Grafana uses Prometheus and CloudWatch as data sources and includes dashboards and alert configuration from the Packer-built Bastion AMI. Open WebUI runs as a Docker container on the Bastion and connects to Ollama through the ALB and to PostgreSQL through RDS.
+The WebUI task runs a `db-init` container before WebUI starts. It enables the PostgreSQL `vector` extension, creates or updates the WebUI database user, and grants access to the `public` schema. This also works when the infrastructure is recreated with a fresh database.
 
-The ASG starts two LLM instances and can scale between two and four based on average CPU utilization.
+WebUI reaches Ollama through the ALB on port `11434`; Grafana reaches Prometheus through the ALB on port `9090`. The ALB security group allows these internal requests from the NAT gateway's public IP.
 
 ## Repository structure
 
 ```text
-Task2/
-├── backend.tf                 # S3 backend and state locking
-├── locals.tf                  # AWS region, AMI IDs, instance sizes, database settings
-├── main.tf                    # Provider and module calls
-├── variables.tf               # Terraform input variables
-├── terraform_tfvars_example.txt
+task3/
+├── backend.tf                    # S3 backend and state locking
+├── locals.tf                     # Region, name, database, SMTP parameter
+├── main.tf                       # Provider and module calls
+├── variables.tf                  # Terraform inputs
+├── terraform_tfvars_example.txt  # Example local inputs
 ├── modules/
-│   ├── vpc/                   # VPC, subnets, routing, internet and NAT gateways
-│   ├── sg/                    # Security groups and ingress/egress rules
-│   ├── ec2/                   # Bastion EC2 and its IAM instance profile
-│   ├── asg/                   # Ollama launch template, ASG, scaling policy
-│   ├── alb/                   # Ollama load balancer, target group, listener
-│   ├── rds/                   # PostgreSQL instance and DB subnet group
-│   ├── webui/                 # Bastion access to the Ollama ALB
-│   └── webui-creds/           # Open WebUI credentials in Secrets Manager
-└── scripts/
-    └── open-webui.sh          # Bastion startup script for Open WebUI and RDS access
+│   ├── vpc/                      # Network and NAT
+│   ├── sg/                       # Security groups
+│   ├── alb/                      # Listeners and target groups
+│   ├── rds/                      # PostgreSQL
+│   ├── webui-creds/              # Secrets Manager
+│   └── ecs/                      # Cluster, services, IAM, logs
+└── .github/workflows/            # Plan and apply
 ```
 
-The sibling `../packer_task2/` project owns the software and configuration baked into the AMIs:
-
-- `bastion/`: Prometheus, Grafana, data sources, dashboards, alert rules, and SMTP configuration.
-- `llm/`: Ollama, the configured model, and Node Exporter.
-
-This Terraform repository keeps only `scripts/open-webui.sh`, which runs when the Bastion starts. Grafana dashboards and the other installation scripts belong to the Packer project.
+The Terraform configuration uses `us-east-1` and the project name `task3` from `locals.tf`.
 
 ## Prerequisites
 
-- Terraform and AWS credentials with access to the resources in this project.
-- Packer, if the Bastion or LLM AMIs need to be built or rebuilt.
-- An S3 bucket for the Terraform backend. Check `backend.tf` before `terraform init`: its current bucket and `manual-task1/terraform.tfstate` key must point to the intended state for this deployment.
-- An EC2 key pair matching `bastion_key_name` in `locals.tf` (`task1-key` in the current configuration).
-- An SSM Parameter Store parameter named `/task2/grafana/smtp-password` for Grafana's SMTP password. The name follows the `project` value in `locals.tf`.
+- Terraform and AWS credentials with permissions to deploy this infrastructure.
+- An existing ECR repository in `us-east-1` with images tagged `ollama-v2`, `open-webui-v2`, `prometheus-v2`, and `grafana-v2`.
+- The S3 bucket configured in `backend.tf` and permissions to access its state object.
+- An SSM **SecureString** parameter `/task3/grafana/smtp-password` containing the Gmail App Password for `alert_email`. Grafana needs it to start.
 
-The configuration currently uses AWS region `us-east-1` and Availability Zones `us-east-1a` and `us-east-1b`.
+**Check `backend.tf` before using Terraform.** Its current state key is `manual-task1/terraform.tfstate`. If that is Task 1's state, set a separate Task 3 key before initialization. Using Task 1's state can change or destroy its resources.
 
-## 1. Build or select the AMIs
+## Build and push images
 
-If the AMI IDs in `locals.tf` already refer to your completed Packer images in the chosen region, use those IDs. To build fresh images, run these commands from the sibling Packer project:
-
-```bash
-cd ../packer_task2/bastion
-packer init .
-packer build -var 'alert_email=you@example.com' .
-
-cd ../llm
-packer init .
-packer build .
-```
-
-Copy the AMI IDs reported by Packer into `bastion_ami_id` and `llm_ami_id` in `Task2/locals.tf`. The Grafana email address is passed to the **Bastion Packer build** through `alert_email`. The `alert_email` variable in this Terraform repository is currently declared but is not used by Terraform resources.
-
-## 2. Set Terraform inputs
-
-From the `Task2/` directory, copy the example and edit its values:
+Docker and Docker Buildx must be available. Run the build script from the sibling Docker project:
 
 ```bash
-cp terraform_tfvars_example.txt terraform.tfvars
+cd ../docker_task3
+./build-and-push.sh ACCOUNT_ID.dkr.ecr.us-east-1.amazonaws.com/REPOSITORY_NAME v2
+cd ../task3
 ```
 
-| Variable | Meaning |
-| --- | --- |
-| `my_ip` | Your public IP in CIDR form, such as `203.0.113.10/32`. Controls inbound access to the Bastion and ALB. |
-| `webui_db_username` | Database role created for Open WebUI at Bastion startup. |
-| `webui_db_password` | Password for that database role. |
-| `webui_secret_key` | Open WebUI session secret. |
-| `alert_email` | Currently unused by Terraform; set the email during the Bastion Packer build. |
+Replace `ACCOUNT_ID` and `REPOSITORY_NAME` with your existing ECR repository details. The script builds `linux/amd64` images and pushes all four `-v2` tags.
 
-Set your own values for the IP and credentials. Do not commit `terraform.tfvars`: its credentials are supplied to Secrets Manager through Terraform and are also part of Terraform state.
+## Set Terraform inputs
 
-## 3. Deploy
+Create or edit `terraform.tfvars` using `terraform_tfvars_example.txt` as a template:
 
-Check the backend settings and AMI IDs, then run:
+```hcl
+my_ip = "203.0.113.10/32"
+alert_email = "example@gmail.com"
+webui_db_username = "webui"
+webui_db_password = "REPLACE_WITH_A_PASSWORD"
+webui_secret_key = "REPLACE_WITH_A_SECRET_KEY"
+ecr_repository_uri = "ACCOUNT_ID.dkr.ecr.us-east-1.amazonaws.com/REPOSITORY_NAME"
+```
+
+Replace the example values. Set `my_ip` to your public IP with `/32`, and use the same repository URI as in the build command. `terraform.tfvars` is ignored by Git; WebUI credentials also enter Terraform state, so restrict access to the S3 state bucket.
+
+Grafana uses `alert_email` as its Gmail SMTP username. The SSM parameter must contain that account's App Password; there is no separate `grafana_smtp_username` variable.
+
+## Deploy
+
+From `task3/`, after checking the backend, images, and inputs:
 
 ```bash
 terraform init
+terraform validate
 terraform plan
 terraform apply
 ```
 
-Review the plan before approving the apply. There are no root Terraform outputs for the Bastion IP or ALB DNS name, so find them in the AWS EC2 console after deployment.
+If you changed the backend after a previous initialization, use `terraform init -reconfigure`. Review the plan before applying. Terraform creates the ECS cluster and services. The WebUI task additionally pulls `public.ecr.aws/docker/library/postgres:16-alpine` for `db-init`.
 
-At first boot, the Bastion's `open-webui.sh` installs Docker and PostgreSQL client tools, reads the Open WebUI and RDS master credentials from Secrets Manager, creates or updates the Open WebUI database role, and starts the Open WebUI container. The Bastion IAM role grants access to those secrets, CloudWatch metrics, EC2 discovery, and the SMTP parameter.
+## Access and verify
 
-## Access and checks
+Get the ALB hostname:
 
-From the public IP specified by `my_ip`, open:
+```bash
+aws elbv2 describe-load-balancers --names task3-alb --region us-east-1 --query 'LoadBalancers[0].DNSName' --output text
+```
 
-| Service | Address |
+From the IP specified in `my_ip`, open:
+
+| Service | URL |
 | --- | --- |
-| Open WebUI | `http://<bastion-public-ip>/` |
-| Grafana | `http://<bastion-public-ip>:3000/` |
-| Prometheus | `http://<bastion-public-ip>:9090/` |
-| Ollama API | `http://<alb-dns-name>:11434/api/tags` |
+| Open WebUI | `http://<ALB_DNS>/` |
+| Grafana | `http://<ALB_DNS>:3000/` |
+| Prometheus | `http://<ALB_DNS>:9090/` |
+| Ollama API | `http://<ALB_DNS>:11434/api/tags` |
 
-In the AWS console, confirm that the ASG instances are running and the ALB targets are healthy. In Prometheus, check that the `prometheus` and `llm-node` targets are up; the LLM targets are discovered by EC2 tags. In Grafana, inspect the configured Prometheus and CloudWatch data sources and dashboards.
+Check service counts and WebUI initialization logs:
 
-To remove the Terraform-managed infrastructure after the exercise, run `terraform destroy` from `Task2/` using the same backend and variable values. Packer-built AMIs and the pre-existing S3 backend are separate from this Terraform deployment.
+```bash
+aws ecs describe-services --cluster task3-cluster --services task3-ollama task3-webui task3-prometheus task3-grafana --region us-east-1 --query 'services[].{name:serviceName,running:runningCount,desired:desiredCount}' --output table
+aws logs tail /ecs/task3/webui --follow --region us-east-1
+```
+
+Expected running counts: Ollama `2`, each other service `1`. The WebUI log group includes `db-init`. If a task stops, check its ECS service events and CloudWatch logs.
+
+## GitHub Actions
+
+Pull requests to `main` from this repository run `terraform init`, `validate`, and `plan`. A push to `main` or manual workflow dispatch runs `plan` and `apply` in the `terraform-apply` GitHub environment. Set any required deployment approval in that environment before pushing to `main`.
+
+| Type | Name | Purpose |
+| --- | --- | --- |
+| Variable | `AWS_ROLE_ARN` | AWS OIDC role |
+| Variable | `AWS_REGION` | AWS region (`us-east-1`) |
+| Variable | `ALLOWED_ACCOUNT_IDS` | Expected account |
+| Variable | `ECR_REPOSITORY_URI` | Existing ECR repository |
+| Secret | `SSH_CIDR` | ALB access CIDR (`my_ip`) |
+| Secret | `ALERT_EMAIL` | Grafana Gmail address |
+| Secret | `WEBUI_DB_USERNAME` | Database user |
+| Secret | `WEBUI_DB_PASSWORD` | Database password |
+| Secret | `WEBUI_SECRET_KEY` | WebUI session secret |
+
+Choose local `terraform apply` or GitHub Actions for a deployment; both must use the intended backend state.
