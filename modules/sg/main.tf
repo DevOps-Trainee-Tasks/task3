@@ -10,8 +10,8 @@ resource "aws_vpc_security_group_ingress_rule" "cidr" {
     for rule in flatten([
       for group_name, group in var.security_groups : [
         for port in group.ingress_ports_tcp : [
-          for cidr in group.allowed_cidr_blocks : {
-            key = "${group_name}:${port}:${cidr}"
+          for cidr_index, cidr in group.allowed_cidr_blocks : {
+            key = "${group_name}:${port}:${cidr_index}"
             group_name = group_name
             port = port
             cidr = cidr

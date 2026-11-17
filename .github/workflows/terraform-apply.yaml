@@ -23,6 +23,10 @@ jobs:
       TF_INPUT: "false"
       TF_VAR_my_ip: ${{ secrets.SSH_CIDR }}
       TF_VAR_alert_email: ${{ secrets.ALERT_EMAIL }}
+      TF_VAR_ecr_repository_uri: ${{ vars.ECR_REPOSITORY_URI }}
+      TF_VAR_webui_db_username: ${{ secrets.WEBUI_DB_USERNAME }}
+      TF_VAR_webui_db_password: ${{ secrets.WEBUI_DB_PASSWORD }}
+      TF_VAR_webui_secret_key: ${{ secrets.WEBUI_SECRET_KEY }}
 
     steps:
       - name: Checkout

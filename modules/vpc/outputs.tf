@@ -13,3 +13,7 @@ output "private_servers_subnet_ids" {
 output "private_db_subnet_ids" {
   value = aws_subnet.private_db_subnets[*].id
 }
+
+output "nat_public_ip" {
+  value = aws_eip.eip.public_ip
+}

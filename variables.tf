@@ -19,3 +19,7 @@ variable "webui_secret_key" {
   type      = string
   sensitive = true
 }
+
+variable "ecr_repository_uri" {
+  type = string
+}

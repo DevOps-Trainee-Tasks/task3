@@ -42,26 +42,32 @@ module "sg" {
   main_vpc_id = module.vpc.vpc_id
 
   security_groups = {
-    bastion_sg = {
-      ingress_ports_tcp = [22, 80, 3000, 9090]
-      allowed_cidr_blocks = [var.my_ip]
-      allowed_security_groups = []
-    }
-
     alb_sg = {
-      ingress_ports_tcp = [11434]
-      allowed_cidr_blocks = [var.my_ip]
+      ingress_ports_tcp = [80, 3000, 9090, 11434]
+      allowed_cidr_blocks = [var.my_ip, "${module.vpc.nat_public_ip}/32"]
       allowed_security_groups = []
     }
 
-    llm_bastion_sg = {
-      ingress_ports_tcp = [22, 9100]
+    ollama_sg = {
+      ingress_ports_tcp = [11434]
       allowed_cidr_blocks = []
-      allowed_security_groups = ["bastion_sg"]
+      allowed_security_groups = ["alb_sg"]
     }
 
-    llm_alb_sg = {
-      ingress_ports_tcp = [11434]
+    webui_sg = {
+      ingress_ports_tcp = [8080]
+      allowed_cidr_blocks = []
+      allowed_security_groups = ["alb_sg"]
+    }
+
+    grafana_sg = {
+      ingress_ports_tcp = [3000]
+      allowed_cidr_blocks = []
+      allowed_security_groups = ["alb_sg"]
+    }
+
+    prometheus_sg = {
+      ingress_ports_tcp = [9090]
       allowed_cidr_blocks = []
       allowed_security_groups = ["alb_sg"]
     }
@@ -69,33 +75,11 @@ module "sg" {
     rds_sg = {
       ingress_ports_tcp = [5432]
       allowed_cidr_blocks = []
-      allowed_security_groups = ["llm_alb_sg", "bastion_sg"]
+      allowed_security_groups = ["webui_sg"]
     }
-
   }
 }
 
-module "bastion" {
-  source = "./modules/ec2"
-
-  ec2_name = "Bastion"
-  name_prefix = local.project
-  ami_id = local.bastion_ami_id
-  instance_type = local.bastion_instance_type
-  subnet_id = module.vpc.public_subnet_ids[0]
-  security_group_ids = [module.sg.security_group_ids["bastion_sg"]]
-  key_name = local.bastion_key_name
-  smtp_password_parameter_arn = local.smtp_password_parameter_arn
-  user_data = templatefile("${path.root}/scripts/open-webui.sh", {
-  ollama_url = "http://${module.alb.alb_dns}:11434"
-  db_host = module.rds.address
-  db_name = local.rds_db_name
-  webui_secret_arn = module.webui_credentials.arn
-  rds_master_secret_arn = module.rds.master_secret_arn
-  })
-  webui_secret_arn = module.webui_credentials.arn
-  rds_master_secret_arn = module.rds.master_secret_arn
-}
 
 module "alb" {
     source = "./modules/alb"
@@ -105,21 +89,6 @@ module "alb" {
     public_subnet_ids = module.vpc.public_subnet_ids
     security_groups_id = module.sg.security_group_ids["alb_sg"]
     ollama_port = 11434
-}
-
-module "asg" {
-  source = "./modules/asg"
-
-  name_prefix = local.project
-  ami_id = local.llm_ami_id
-  instance_type = local.llm_instance_type
-  key_name = local.bastion_key_name
-  security_group_ids = [
-    module.sg.security_group_ids["llm_bastion_sg"],
-    module.sg.security_group_ids["llm_alb_sg"]
-  ]
-  private_subnet_ids = module.vpc.private_servers_subnet_ids
-  target_group_arn = module.alb.target_group_arn
 }
 
 module "rds" {
@@ -135,12 +104,6 @@ module "rds" {
     allocated_storage = local.rds_allocated_storage
 }
 
-module "webui" {
-  source = "./modules/webui"
-
-  alb_security_group_id = module.sg.security_group_ids["alb_sg"]
-  bastion_public_ip = module.bastion.public_ip
-}
 
 module "webui_credentials" {
   source = "./modules/webui-creds"
@@ -149,4 +112,40 @@ module "webui_credentials" {
   db_username = var.webui_db_username
   db_password = var.webui_db_password
   webui_secret_key = var.webui_secret_key
+
+  db_host = module.rds.address
+  db_name = local.rds_db_name
+}
+
+module "ecs" {
+  source = "./modules/ecs"
+
+  name_prefix = local.project
+  aws_region = local.aws_region
+  private_subnet_ids = module.vpc.private_servers_subnet_ids
+  alb_dns = module.alb.alb_dns
+
+  ollama_image = "${var.ecr_repository_uri}:ollama-v2"
+  webui_image = "${var.ecr_repository_uri}:open-webui-v2"
+  prometheus_image = "${var.ecr_repository_uri}:prometheus-v2"
+  grafana_image = "${var.ecr_repository_uri}:grafana-v2"
+
+  ollama_security_group_id = module.sg.security_group_ids["ollama_sg"]
+  webui_security_group_id = module.sg.security_group_ids["webui_sg"]
+  prometheus_security_group_id = module.sg.security_group_ids["prometheus_sg"]
+  grafana_security_group_id = module.sg.security_group_ids["grafana_sg"]
+
+  ollama_target_group_arn = module.alb.ollama_target_group_arn
+  webui_target_group_arn = module.alb.webui_target_group_arn
+  prometheus_target_group_arn = module.alb.prometheus_target_group_arn
+  grafana_target_group_arn = module.alb.grafana_target_group_arn
+
+  webui_secret_arn = module.webui_credentials.arn
+  database_url_secret_arn = module.webui_credentials.database_url_secret_arn
+  alert_email = var.alert_email
+
+  db_host = module.rds.address
+  db_name = local.rds_db_name
+  rds_master_secret_arn = module.rds.master_secret_arn
+  smtp_password_parameter_arn = local.smtp_password_parameter_arn
 }

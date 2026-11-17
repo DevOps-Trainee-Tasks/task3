@@ -15,3 +15,11 @@ variable "webui_secret_key" {
   type      = string
   sensitive = true
 }
+
+variable "db_host" {
+  type = string
+}
+
+variable "db_name" {
+  type = string
+}
