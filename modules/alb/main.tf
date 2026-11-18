@@ -10,6 +10,7 @@ resource "aws_lb" "internal" {
   internal = true
   subnets = var.private_subnet_ids
   security_groups = [var.internal_security_group_id]
+  idle_timeout = 180
 }
 
 resource "aws_lb_listener" "internal" {
