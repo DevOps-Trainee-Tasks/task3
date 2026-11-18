@@ -23,7 +23,11 @@ resource "aws_iam_role_policy" "grafana" {
       Effect = "Allow"
       Action = [
         "cloudwatch:ListMetrics",
-        "cloudwatch:GetMetricData"
+        "cloudwatch:GetMetricData",
+        "logs:DescribeLogGroups",
+        "logs:StartQuery",
+        "logs:StopQuery",
+        "logs:GetQueryResults"
       ]
       Resource = "*"
     }]
