@@ -99,7 +99,7 @@ resource "aws_ecs_task_definition" "webui" {
     name = "logs"
 
     efs_volume_configuration {
-      file_system_id = var.logs_efs_id
+      file_system_id = var.logs_efs_ids["webui"]
       transit_encryption = "ENABLED"
     }
   }

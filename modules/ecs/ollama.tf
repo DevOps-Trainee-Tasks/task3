@@ -31,7 +31,7 @@ resource "aws_ecs_task_definition" "ollama" {
     name = "logs"
 
     efs_volume_configuration {
-      file_system_id = var.logs_efs_id
+      file_system_id = var.logs_efs_ids["ollama"]
       transit_encryption = "ENABLED"
     }
   }

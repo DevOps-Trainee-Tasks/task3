@@ -106,8 +106,8 @@ variable "db_init_image" {
   type = string
 }
 
-variable "logs_efs_id" {
-  type = string
-}
-
 variable "log_router" {}
+
+variable "logs_efs_ids" {
+  type = map(string)
+}

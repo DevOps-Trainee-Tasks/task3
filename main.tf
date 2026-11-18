@@ -149,7 +149,8 @@ module "iam" {
 module "efs" {
   source = "./modules/efs"
 
-  name_prefix = local.project
+  for_each = toset(["ollama", "webui", "prometheus", "grafana"])
+  name_prefix = "${local.project}-${each.key}"
   subnet_ids = module.vpc.private_servers_subnet_ids
   security_group_id = module.sg.security_group_ids["efs_sg"]
 }
@@ -189,7 +190,12 @@ module "ecs" {
   rds_master_secret_arn = module.rds.master_secret_arn
   smtp_password_parameter_arn = local.smtp_password_parameter_arn
 
-  logs_efs_id = module.efs.file_system_id
   log_router = local.log_router
   internal_alb_dns = module.alb.internal_alb_dns
+  logs_efs_ids = {
+  ollama = module.efs["ollama"].file_system_id
+  webui = module.efs["webui"].file_system_id
+  prometheus = module.efs["prometheus"].file_system_id
+  grafana = module.efs["grafana"].file_system_id
+}
 }

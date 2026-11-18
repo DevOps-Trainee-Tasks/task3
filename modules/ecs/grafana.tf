@@ -71,7 +71,7 @@ resource "aws_ecs_task_definition" "grafana" {
     name = "logs"
 
     efs_volume_configuration {
-      file_system_id = var.logs_efs_id
+      file_system_id = var.logs_efs_ids["grafana"]
       transit_encryption = "ENABLED"
     }
   }

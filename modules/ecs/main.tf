@@ -4,4 +4,7 @@ resource "aws_ecs_cluster" "main" {
   name = "containerInsights"
   value = "enhanced"
   }
+  tags = {
+  Name = "${var.name_prefix}-logs"
+}
 }

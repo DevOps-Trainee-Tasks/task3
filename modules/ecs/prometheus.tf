@@ -38,7 +38,7 @@ resource "aws_ecs_task_definition" "prometheus" {
     name = "logs"
 
     efs_volume_configuration {
-      file_system_id = var.logs_efs_id
+      file_system_id = var.logs_efs_ids["prometheus"]
       transit_encryption = "ENABLED"
     }
   }
