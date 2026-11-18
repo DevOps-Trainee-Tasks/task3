@@ -2,9 +2,7 @@ resource "aws_efs_file_system" "logs" {
   creation_token = "${var.name_prefix}-logs"
 
   tags = {
-    tags = {
     Name = "${var.name_prefix}-logs"
-  }
   }
 }
 
