@@ -10,7 +10,9 @@ resource "aws_ecs_task_definition" "prometheus" {
   memory = 1024
   execution_role_arn = var.execution_role_arn
 
-  container_definitions = jsonencode([var.log_router, {
+  container_definitions = jsonencode([merge(var.log_router, {
+    image = var.prometheus_log_router_image
+  }), {
     name = "prometheus"
     image = var.prometheus_image
     command = [
@@ -29,7 +31,7 @@ resource "aws_ecs_task_definition" "prometheus" {
       logDriver = "awsfirelens"
       options = {
         Name = "file"
-        Path = "/logs/prometheus"
+        Path = "/logs/prometheus/$${AZ}"
         Mkdir = "true"
       }
     }
@@ -49,7 +51,7 @@ resource "aws_ecs_service" "prometheus" {
   cluster = aws_ecs_cluster.main.id
   task_definition = aws_ecs_task_definition.prometheus.arn
   launch_type = "FARGATE"
-  desired_count = 1
+  desired_count = 2
 
   network_configuration {
     subnets = var.private_subnet_ids

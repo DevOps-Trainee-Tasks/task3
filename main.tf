@@ -51,7 +51,7 @@ module "sg" {
     ollama_sg = {
       ingress_ports_tcp = [11434]
       allowed_cidr_blocks = []
-      allowed_security_groups = ["alb_sg"]
+      allowed_security_groups = ["alb_sg", "internal_alb_sg"]
     }
 
     webui_sg = {
@@ -167,7 +167,7 @@ module "ecs" {
 
   ollama_image = "${var.ecr_repository_uri}/ollama:v3"
   webui_image = "${var.ecr_repository_uri}/open-webui:v2"
-  prometheus_image = "${var.ecr_repository_uri}/prometheus:v2"
+  prometheus_image = "${var.ecr_repository_uri}/prometheus:v3"
   grafana_image = "${var.ecr_repository_uri}/grafana:v2"
   db_init_image = "${var.ecr_repository_uri}/db-init:v2"
 
@@ -197,13 +197,14 @@ module "ecs" {
   webui = module.efs["webui"].file_system_id
   prometheus = module.efs["prometheus"].file_system_id
   grafana = module.efs["grafana"].file_system_id
+}
 
   service_discovery_arns = module.cloud_map.service_arns
-}
+  prometheus_log_router_image = "${var.ecr_repository_uri}/log-router:v2"
 }
 
 module "cloud_map" {
-  source = "./modules/cloud-map"
+  source = "./modules/cloudmap"
 
   name_prefix = local.project
   vpc_id = module.vpc.vpc_id

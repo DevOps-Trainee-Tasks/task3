@@ -115,3 +115,7 @@ variable "logs_efs_ids" {
 variable "service_discovery_arns" {
   type = map(string)
 }
+
+variable "prometheus_log_router_image" {
+  type = string
+}
