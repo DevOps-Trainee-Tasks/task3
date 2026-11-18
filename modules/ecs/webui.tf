@@ -117,6 +117,10 @@ resource "aws_ecs_service" "webui" {
     security_groups = [var.webui_security_group_id]
   }
 
+  service_registries {
+    registry_arn = var.service_discovery_arns["webui"]
+  }
+
   load_balancer {
     target_group_arn = var.webui_target_group_arn
     container_name = "webui"

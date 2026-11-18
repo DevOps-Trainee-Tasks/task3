@@ -89,6 +89,10 @@ resource "aws_ecs_service" "grafana" {
     security_groups = [var.grafana_security_group_id]
   }
 
+  service_registries {
+    registry_arn = var.service_discovery_arns["grafana"]
+  }
+
   load_balancer {
     target_group_arn = var.grafana_target_group_arn
     container_name = "grafana"

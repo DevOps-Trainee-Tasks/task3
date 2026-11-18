@@ -56,6 +56,10 @@ resource "aws_ecs_service" "prometheus" {
     security_groups = [var.prometheus_security_group_id]
   }
 
+  service_registries {
+    registry_arn = var.service_discovery_arns["prometheus"]
+  }
+
   load_balancer {
     target_group_arn = var.prometheus_target_group_arn
     container_name = "prometheus"

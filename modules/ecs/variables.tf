@@ -111,3 +111,7 @@ variable "log_router" {}
 variable "logs_efs_ids" {
   type = map(string)
 }
+
+variable "service_discovery_arns" {
+  type = map(string)
+}

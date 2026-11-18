@@ -197,5 +197,15 @@ module "ecs" {
   webui = module.efs["webui"].file_system_id
   prometheus = module.efs["prometheus"].file_system_id
   grafana = module.efs["grafana"].file_system_id
+
+  service_discovery_arns = module.cloud_map.service_arns
 }
+}
+
+module "cloud_map" {
+  source = "./modules/cloud-map"
+
+  name_prefix = local.project
+  vpc_id = module.vpc.vpc_id
+  service_names = ["ollama", "webui", "prometheus", "grafana"]
 }

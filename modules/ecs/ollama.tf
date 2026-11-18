@@ -49,6 +49,10 @@ resource "aws_ecs_service" "ollama" {
     security_groups = [var.ollama_security_group_id]
   }
 
+  service_registries {
+    registry_arn = var.service_discovery_arns["ollama"]
+  }
+
   load_balancer {
     target_group_arn = var.ollama_target_group_arn
     container_name = "ollama"
