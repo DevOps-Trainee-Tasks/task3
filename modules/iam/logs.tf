@@ -23,7 +23,11 @@ resource "aws_iam_role_policy" "logs" {
       Effect = "Allow"
       Action = [
         "logs:CreateLogStream",
-        "logs:PutLogEvents"
+        "logs:PutLogEvents",
+        "ssmmessages:CreateControlChannel",
+        "ssmmessages:CreateDataChannel",
+        "ssmmessages:OpenControlChannel",
+        "ssmmessages:OpenDataChannel"
       ]
       Resource = "*"
     }]
