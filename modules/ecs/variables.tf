@@ -116,6 +116,6 @@ variable "service_discovery_arns" {
   type = map(string)
 }
 
-variable "prometheus_log_router_image" {
+variable "logs_task_role_arn" {
   type = string
 }

@@ -9,10 +9,9 @@ resource "aws_ecs_task_definition" "prometheus" {
   cpu = 512
   memory = 1024
   execution_role_arn = var.execution_role_arn
+  task_role_arn = var.logs_task_role_arn
 
-  container_definitions = jsonencode([merge(var.log_router, {
-    image = var.prometheus_log_router_image
-  }), {
+  container_definitions = jsonencode([var.log_router, {
     name = "prometheus"
     image = var.prometheus_image
     command = [

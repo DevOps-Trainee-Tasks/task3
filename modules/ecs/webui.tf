@@ -9,6 +9,7 @@ resource "aws_ecs_task_definition" "webui" {
   cpu = 1024
   memory = 2048
   execution_role_arn = var.execution_role_arn
+  task_role_arn = var.logs_task_role_arn
 
   container_definitions = jsonencode([
     var.log_router,

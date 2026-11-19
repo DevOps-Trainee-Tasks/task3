@@ -9,6 +9,7 @@ resource "aws_ecs_task_definition" "ollama" {
   cpu = 2048
   memory = 8192
   execution_role_arn = var.execution_role_arn
+  task_role_arn = var.logs_task_role_arn
 
   container_definitions = jsonencode([var.log_router, {
     name = "ollama"

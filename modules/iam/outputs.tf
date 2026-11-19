@@ -7,3 +7,8 @@ output "grafana_task_role_arn" {
   value      = aws_iam_role.grafana.arn
   depends_on = [aws_iam_role_policy.grafana]
 }
+
+output "logs_task_role_arn" {
+  value      = aws_iam_role.logs.arn
+  depends_on = [aws_iam_role_policy.logs]
+}

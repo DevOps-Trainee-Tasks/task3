@@ -9,7 +9,7 @@ locals {
     rds_allocated_storage = 20
     log_router = {
         name  = "log-router"
-        image = "${var.ecr_repository_uri}/log-router:v3"
+        image = "${var.ecr_repository_uri}/log-router:v4"
 
         firelensConfiguration = {
         type = "fluentbit"

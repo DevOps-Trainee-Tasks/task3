@@ -167,8 +167,8 @@ module "ecs" {
 
   ollama_image = "${var.ecr_repository_uri}/ollama:v3"
   webui_image = "${var.ecr_repository_uri}/open-webui:v2"
-  prometheus_image = "${var.ecr_repository_uri}/prometheus:v3"
-  grafana_image = "${var.ecr_repository_uri}/grafana:v2"
+  prometheus_image = "${var.ecr_repository_uri}/prometheus:v4"
+  grafana_image = "${var.ecr_repository_uri}/grafana:v3"
   db_init_image = "${var.ecr_repository_uri}/db-init:v2"
 
   ollama_security_group_id = module.sg.security_group_ids["ollama_sg"]
@@ -200,7 +200,7 @@ module "ecs" {
 }
 
   service_discovery_arns = module.cloud_map.service_arns
-  prometheus_log_router_image = "${var.ecr_repository_uri}/log-router:v2"
+  logs_task_role_arn = module.iam.logs_task_role_arn
 }
 
 module "cloud_map" {
