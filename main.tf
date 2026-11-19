@@ -43,7 +43,7 @@ module "sg" {
 
   security_groups = {
     alb_sg = {
-      ingress_ports_tcp = [80, 3000, 9090, 11434]
+      ingress_ports_tcp = [80]
       allowed_cidr_blocks = [var.my_ip, "${module.vpc.nat_public_ip}/32"]
       allowed_security_groups = []
     }
@@ -51,19 +51,19 @@ module "sg" {
     ollama_sg = {
       ingress_ports_tcp = [11434]
       allowed_cidr_blocks = []
-      allowed_security_groups = ["alb_sg", "internal_alb_sg"]
+      allowed_security_groups = ["internal_alb_sg"]
     }
 
     webui_sg = {
       ingress_ports_tcp = [8080]
       allowed_cidr_blocks = []
-      allowed_security_groups = ["alb_sg"]
+      allowed_security_groups = ["alb_sg", "prometheus_sg"]
     }
 
     grafana_sg = {
       ingress_ports_tcp = [3000]
       allowed_cidr_blocks = []
-      allowed_security_groups = ["alb_sg"]
+      allowed_security_groups = ["alb_sg", "prometheus_sg"]
     }
 
     prometheus_sg = {
