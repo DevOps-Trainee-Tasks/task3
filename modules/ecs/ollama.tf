@@ -20,11 +20,6 @@ resource "aws_ecs_task_definition" "ollama" {
 
     logConfiguration = {
       logDriver = "awsfirelens"
-      options = {
-        Name = "file"
-        Path = "/logs/ollama"
-        Mkdir = "true"
-      }
     }
   }])
   volume {

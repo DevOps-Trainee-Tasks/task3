@@ -29,11 +29,6 @@ resource "aws_ecs_task_definition" "prometheus" {
 
     logConfiguration = {
       logDriver = "awsfirelens"
-      options = {
-        Name = "file"
-        Path = "/logs/prometheus/$${AZ}"
-        Mkdir = "true"
-      }
     }
   }])
   volume {

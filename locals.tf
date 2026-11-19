@@ -8,15 +8,20 @@ locals {
     rds_engine_version = "16"
     rds_allocated_storage = 20
     log_router = {
-        name = "log-router"
-        image = "public.ecr.aws/aws-observability/aws-for-fluent-bit:3"
+        name  = "log-router"
+        image = "${var.ecr_repository_uri}/log-router:v3"
 
         firelensConfiguration = {
-            type = "fluentbit"
+        type = "fluentbit"
+        options = {
+            config-file-type  = "file"
+            config-file-value = "/extra.conf"
         }
+        }
+
         mountPoints = [{
-            sourceVolume = "logs"
-            containerPath = "/logs"
-        }]
-    }
+        sourceVolume  = "logs"
+        containerPath = "/logs"
+  }]
+}
 }

@@ -60,11 +60,6 @@ resource "aws_ecs_task_definition" "grafana" {
 
     logConfiguration = {
       logDriver = "awsfirelens"
-      options = {
-        Name = "file"
-        Path = "/logs/grafana"
-        Mkdir = "true"
-      }
     }
   }])
   volume {

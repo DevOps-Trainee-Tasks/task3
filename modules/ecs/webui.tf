@@ -49,11 +49,6 @@ resource "aws_ecs_task_definition" "webui" {
 
     logConfiguration = {
       logDriver = "awsfirelens"
-      options = {
-        Name = "file"
-        Path = "/logs/webui"
-        Mkdir = "true"
-      }
     }
   },
   {
@@ -87,11 +82,6 @@ resource "aws_ecs_task_definition" "webui" {
 
     logConfiguration = {
       logDriver = "awsfirelens"
-      options = {
-        Name = "file"
-        Path = "/logs/webui"
-        Mkdir = "true"
-      }
     }
   }
   ])
