@@ -27,7 +27,9 @@ resource "aws_iam_role_policy" "grafana" {
         "logs:DescribeLogGroups",
         "logs:StartQuery",
         "logs:StopQuery",
-        "logs:GetQueryResults"
+        "logs:GetQueryResults",
+        "logs:CreateLogStream",
+        "logs:PutLogEvents"
       ]
       Resource = "*"
     }]

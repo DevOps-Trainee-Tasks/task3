@@ -161,7 +161,6 @@ module "ecs" {
   name_prefix = local.project
   execution_role_arn = module.iam.execution_role_arn
   grafana_task_role_arn = module.iam.grafana_task_role_arn
-  aws_region = local.aws_region
   private_subnet_ids = module.vpc.private_servers_subnet_ids
   alb_dns = module.alb.alb_dns
 
