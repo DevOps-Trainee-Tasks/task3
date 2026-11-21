@@ -1,8 +1,9 @@
 name: Terraform Plan
 
 on:
-  push:
-    branches-ignore: [main]
+  pull_request:
+    branches: [task3]
+    types: [opened, synchronize, reopened]
 
 permissions:
   contents: read
