@@ -10,10 +10,6 @@ variable "grafana_task_role_arn" {
   type = string
 }
 
-variable "aws_region" {
-  type = string
-}
-
 variable "private_subnet_ids" {
   type = list(string)
 }

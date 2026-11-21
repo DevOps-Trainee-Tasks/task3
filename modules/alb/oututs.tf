@@ -18,10 +18,6 @@ output "alb_dns" {
   value = aws_lb.alb.dns_name
 }
 
-output "arn_suffix" {
-  value = aws_lb.alb.arn_suffix
-}
-
 output "internal_alb_dns" {
   value = aws_lb.internal.dns_name
 }
