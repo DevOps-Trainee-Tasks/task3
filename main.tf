@@ -49,32 +49,32 @@ module "sg" {
     }
 
     ollama_sg = {
-      ingress_ports_tcp = [11434]
+      ingress_ports_tcp = [11434, 9779]
       allowed_cidr_blocks = []
-      allowed_security_groups = ["internal_alb_sg"]
+      allowed_security_groups = ["internal_alb_sg", "prometheus_sg"]
     }
 
     webui_sg = {
-      ingress_ports_tcp = [8080]
+      ingress_ports_tcp = [8080, 9779]
       allowed_cidr_blocks = []
       allowed_security_groups = ["alb_sg", "prometheus_sg"]
     }
 
     grafana_sg = {
-      ingress_ports_tcp = [3000]
+      ingress_ports_tcp = [3000, 9779]
       allowed_cidr_blocks = []
       allowed_security_groups = ["alb_sg", "prometheus_sg"]
     }
 
     prometheus_sg = {
-      ingress_ports_tcp = [9090]
+      ingress_ports_tcp = [9090, 9779]
       allowed_cidr_blocks = []
       allowed_security_groups = ["alb_sg"]
     }
 
     rds_sg = {
       ingress_ports_tcp = [5432]
-      allowed_cidr_blocks = []
+      allowed_cidr_blocks = [var.my_ip]
       allowed_security_groups = ["webui_sg"]
     }
 
@@ -167,8 +167,9 @@ module "ecs" {
 
   ollama_image = "${var.ecr_repository_uri}/ollama:v3"
   webui_image = "${var.ecr_repository_uri}/open-webui:v2"
-  prometheus_image = "${var.ecr_repository_uri}/prometheus:v4"
-  grafana_image = "${var.ecr_repository_uri}/grafana:v3"
+  prometheus_image = "${var.ecr_repository_uri}/prometheus:v5"
+  grafana_image = "${var.ecr_repository_uri}/grafana:v4"
+  ecs_exporter_image = "${var.ecr_repository_uri}/ecs-exporter:v1"
   db_init_image = "${var.ecr_repository_uri}/db-init:v2"
 
   ollama_security_group_id = module.sg.security_group_ids["ollama_sg"]

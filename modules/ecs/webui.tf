@@ -84,6 +84,14 @@ resource "aws_ecs_task_definition" "webui" {
     logConfiguration = {
       logDriver = "awsfirelens"
     }
+  },
+  {
+    name = "ecs-exporter"
+    image = var.ecs_exporter_image
+
+    portMappings = [{
+      containerPort = 9779
+    }]
   }
   ])
   volume {
@@ -102,6 +110,7 @@ resource "aws_ecs_service" "webui" {
   task_definition = aws_ecs_task_definition.webui.arn
   launch_type = "FARGATE"
   desired_count = 2
+  enable_execute_command = true
 
   network_configuration {
     subnets = var.private_subnet_ids

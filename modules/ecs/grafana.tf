@@ -61,6 +61,13 @@ resource "aws_ecs_task_definition" "grafana" {
     logConfiguration = {
       logDriver = "awsfirelens"
     }
+  }, {
+    name = "ecs-exporter"
+    image = var.ecs_exporter_image
+
+    portMappings = [{
+      containerPort = 9779
+    }]
   }])
   volume {
     name = "logs"

@@ -42,6 +42,10 @@ variable "grafana_image" {
   type = string
 }
 
+variable "ecs_exporter_image" {
+  type = string
+}
+
 variable "ollama_security_group_id" {
   type = string
 }
