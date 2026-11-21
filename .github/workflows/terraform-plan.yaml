@@ -1,9 +1,8 @@
 name: Terraform Plan
 
 on:
-  pull_request:
-    branches: [main]
-    types: [opened, synchronize, reopened]
+  push:
+    branches-ignore: [main]
 
 permissions:
   contents: read
@@ -11,7 +10,6 @@ permissions:
 
 jobs:
   plan:
-    if: github.event.pull_request.head.repo.full_name == github.repository
     runs-on: ubuntu-latest
 
     env:
@@ -28,7 +26,6 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
         with:
-          ref: ${{ github.event.pull_request.head.sha }}
           persist-credentials: false
 
       - name: Setup Terraform
