@@ -157,12 +157,12 @@ module "ecs" {
   private_subnet_ids = module.vpc.private_servers_subnet_ids
   alb_dns = module.alb.alb_dns
 
-  ollama_image = "${var.ecr_repository_uri}/ollama:v3"
-  webui_image = "${var.ecr_repository_uri}/open-webui:v2"
-  prometheus_image = "${var.ecr_repository_uri}/prometheus:v5"
-  grafana_image = "${var.ecr_repository_uri}/grafana:v4"
-  ecs_exporter_image = "${var.ecr_repository_uri}/ecs-exporter:v1"
-  db_init_image = "${var.ecr_repository_uri}/db-init:v2"
+  ollama_image = "${var.ecr_repository_uri}/ollama:${local.image_tag}"
+  webui_image = "${var.ecr_repository_uri}/open-webui:${local.image_tag}"
+  prometheus_image = "${var.ecr_repository_uri}/prometheus:${local.image_tag}"
+  grafana_image = "${var.ecr_repository_uri}/grafana:${local.image_tag}"
+  ecs_exporter_image = "${var.ecr_repository_uri}/ecs-exporter:${local.image_tag}"
+  db_init_image = "${var.ecr_repository_uri}/db-init:${local.image_tag}"
 
   ollama_security_group_id = module.sg.security_group_ids["ollama_sg"]
   webui_security_group_id = module.sg.security_group_ids["webui_sg"]

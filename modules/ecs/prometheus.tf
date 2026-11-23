@@ -29,6 +29,12 @@ resource "aws_ecs_task_definition" "prometheus" {
     logConfiguration = {
       logDriver = "awsfirelens"
     }
+  }, {
+    name  = "ecs-exporter"
+    image = var.ecs_exporter_image
+  }, {
+    name  = "blackbox-exporter"
+    image = "quay.io/prometheus/blackbox-exporter:v0.27.0"
   }])
   volume {
     name = "logs"

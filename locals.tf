@@ -1,6 +1,7 @@
 locals {
     aws_region = "us-east-1"
     project = "task3"
+    image_tag = "a0c68"
     smtp_password_parameter_arn = "arn:aws:ssm:${local.aws_region}:${data.aws_caller_identity.current.account_id}:parameter/task2/grafana/smtp-password"
     rds_instance_class = "db.t4g.micro"
     rds_db_name = "manualdb"
@@ -9,7 +10,7 @@ locals {
     rds_allocated_storage = 20
     log_router = {
         name  = "log-router"
-        image = "${var.ecr_repository_uri}/log-router:v4"
+        image = "${var.ecr_repository_uri}/log-router:${local.image_tag}"
 
         firelensConfiguration = {
         type = "fluentbit"
