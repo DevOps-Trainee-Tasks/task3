@@ -40,11 +40,11 @@ resource "aws_ecs_task_definition" "webui" {
       },
       {
         name = "WEBUI_DB_USERNAME"
-        valueFrom = "${var.webui_secret_arn}:db_username::"
+        valueFrom = "${var.webui_secret_arn}:webui_db_username::"
       },
       {
         name = "WEBUI_DB_PASSWORD"
-        valueFrom = "${var.webui_secret_arn}:db_password::"
+        valueFrom = "${var.webui_secret_arn}:webui_db_password::"
       }
     ]
 
@@ -65,10 +65,20 @@ resource "aws_ecs_task_definition" "webui" {
       containerPort = 8080
     }]
 
-    environment = [{
-      name = "OLLAMA_BASE_URL"
-      value = "http://${var.internal_alb_dns}"
-    }]
+    environment = [
+      {
+        name = "OLLAMA_BASE_URL"
+        value = "http://${var.internal_alb_dns}"
+      },
+      {
+        name = "PGHOST"
+        value = var.db_host
+      },
+      {
+        name = "PGDATABASE"
+        value = var.db_name
+      }
+    ]
 
     secrets = [
       {
@@ -76,9 +86,20 @@ resource "aws_ecs_task_definition" "webui" {
         valueFrom = "${var.webui_secret_arn}:webui_secret_key::"
       },
       {
-        name = "DATABASE_URL"
-        valueFrom = var.database_url_secret_arn
+        name = "WEBUI_DB_USERNAME"
+        valueFrom = "${var.webui_secret_arn}:webui_db_username::"
+      },
+      {
+        name = "WEBUI_DB_PASSWORD"
+        valueFrom = "${var.webui_secret_arn}:webui_db_password::"
       }
+    ]
+
+    command = ["bash", "-c", <<-EOT
+      set -e
+      export DATABASE_URL="$(python3 -c 'import os; from urllib.parse import quote; print("postgresql://{}:{}@{}:5432/{}".format(quote(os.environ["WEBUI_DB_USERNAME"], safe=""), quote(os.environ["WEBUI_DB_PASSWORD"], safe=""), os.environ["PGHOST"], os.environ["PGDATABASE"]))')"
+      exec bash start.sh
+    EOT
     ]
 
     logConfiguration = {

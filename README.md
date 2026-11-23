@@ -9,7 +9,7 @@ Terraform deploys Ollama, Open WebUI, Prometheus, and Grafana as ECS Fargate ser
 | Network | VPC `10.0.0.0/24` across `us-east-1a` and `us-east-1b`; two public, two private application, and two private database subnets; one NAT gateway. |
 | Load balancers | Public `task3-alb` for WebUI, Grafana, and Prometheus; private `task3-internal-alb` for WebUI-to-Ollama traffic. |
 | ECS | Two Ollama tasks, two WebUI tasks, two Prometheus tasks, and one Grafana task in private application subnets. |
-| Database | PostgreSQL 16 RDS (`manualdb`); RDS manages the `dbadmin` password in Secrets Manager. The WebUI task runs `db-init` before the application starts. |
+| Database | PostgreSQL 16 RDS (`manualdb`); RDS manages the `dbadmin` password in Secrets Manager. The WebUI task runs `db-init` before the application starts. WebUI reads credentials from the manually created `task3/webui-config` secret and builds `DATABASE_URL` using the current RDS address. |
 | Metrics | Ollama, WebUI, and Grafana tasks include an `ecs-exporter` sidecar on port 9779. Prometheus discovers tasks through the private Cloud Map domain `task3.local` and scrapes these exporters. Grafana has Prometheus and CloudWatch data sources. |
 | Logs | A FireLens `log-router` sidecar sends application logs to CloudWatch Logs and writes them to a separate EFS file system for each service, organized by availability zone. |
 
@@ -45,15 +45,13 @@ The sibling `docker_task3/` directory contains `ollama`, `open-webui`, `promethe
 2. Create the seven ECR repositories `task3/ollama`, `task3/open-webui`, `task3/prometheus`, `task3/grafana`, `task3/db-init`, `task3/ecs-exporter`, and `task3/log-router` if they do not already exist. Build and push images from `docker_task3/` before starting ECS.
 3. Ensure the S3 bucket in `backend.tf` exists. **Check its state key before running Terraform:** the committed key is `manual-task1/terraform.tfstate`. If that belongs to Task 1, set a dedicated Task 3 key first to avoid using the other project's state.
 4. Create the SSM SecureString parameter `/task2/grafana/smtp-password` containing the Gmail App Password for `alert_email`. This is the exact parameter used by `locals.tf`.
+5. Create the `task3/webui-config` secret manually in AWS Secrets Manager (`us-east-1`). It must contain the string keys `webui_db_username`, `webui_db_password`, and `webui_secret_key`. Create it before running `terraform plan`. The secret is not managed by Terraform.
 
 Create `terraform.tfvars` from `terraform_tfvars_example.txt` and replace every example value:
 
 ```hcl
 my_ip              = "203.0.113.10/32"
 alert_email        = "you@example.com"
-webui_db_username  = "webui"
-webui_db_password  = "REPLACE_ME"
-webui_secret_key   = "REPLACE_ME"
 ecr_repository_uri = "ACCOUNT_ID.dkr.ecr.us-east-1.amazonaws.com/task3"
 ```
 

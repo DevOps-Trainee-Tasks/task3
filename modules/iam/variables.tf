@@ -6,10 +6,6 @@ variable "webui_secret_arn" {
   type = string
 }
 
-variable "database_url_secret_arn" {
-  type = string
-}
-
 variable "rds_master_secret_arn" {
   type = string
 }

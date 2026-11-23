@@ -12,7 +12,6 @@ resource "aws_iam_role_policy" "secrets" {
       ]
       Resource = [
         var.webui_secret_arn,
-        var.database_url_secret_arn,
         var.rds_master_secret_arn,
         var.smtp_password_parameter_arn
       ]

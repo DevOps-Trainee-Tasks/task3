@@ -128,12 +128,6 @@ module "webui_credentials" {
   source = "./modules/webui-creds"
 
   name_prefix = local.project
-  db_username = var.webui_db_username
-  db_password = var.webui_db_password
-  webui_secret_key = var.webui_secret_key
-
-  db_host = module.rds.address
-  db_name = local.rds_db_name
 }
 
 module "iam" {
@@ -141,7 +135,6 @@ module "iam" {
 
   name_prefix = local.project
   webui_secret_arn = module.webui_credentials.arn
-  database_url_secret_arn = module.webui_credentials.database_url_secret_arn
   rds_master_secret_arn = module.rds.master_secret_arn
   smtp_password_parameter_arn = local.smtp_password_parameter_arn
 }
@@ -182,7 +175,6 @@ module "ecs" {
   grafana_target_group_arn = module.alb.grafana_target_group_arn
 
   webui_secret_arn = module.webui_credentials.arn
-  database_url_secret_arn = module.webui_credentials.database_url_secret_arn
   alert_email = var.alert_email
 
   db_host = module.rds.address
